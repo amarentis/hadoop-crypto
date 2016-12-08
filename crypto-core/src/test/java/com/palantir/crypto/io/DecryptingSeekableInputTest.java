@@ -79,7 +79,7 @@ public final class DecryptingSeekableInputTest {
     }
 
     @Test
-    public final void testDecrypt() throws IOException {
+    public void testDecrypt() throws IOException {
         assertThat(cis.getPos(), is(0L));
 
         byte[] decrypted = new byte[NUM_BYTES];
@@ -90,40 +90,40 @@ public final class DecryptingSeekableInputTest {
     }
 
     @Test
-    public final void testSeek_firstBlock() throws IOException {
+    public void testSeek_firstBlock() throws IOException {
         testSeek(0);
     }
 
     @Test
-    public final void testSeek_firstBlockAndOffset() throws IOException {
+    public void testSeek_firstBlockAndOffset() throws IOException {
         testSeek(1);
     }
 
     @Test
-    public final void testSeek_manyBlocks() throws IOException {
+    public void testSeek_manyBlocks() throws IOException {
         int pos = seekableCipher.getBlockSize() * 10;
         testSeek(pos);
     }
 
     @Test
-    public final void testSeek_manyBlocksAndOffset() throws IOException {
+    public void testSeek_manyBlocksAndOffset() throws IOException {
         int pos = seekableCipher.getBlockSize() * 10 + 1;
         testSeek(pos);
     }
 
     @Test
-    public final void testSeek_onePastEndOfData() throws IOException {
+    public void testSeek_onePastEndOfData() throws IOException {
         cis.seek(NUM_BYTES);
         assertThat(cis.read(new byte[1], 0, 1), is(-1));
     }
 
     @Test
-    public final void testSeek_manyBlocksAndNegativeOffset() throws IOException {
+    public void testSeek_manyBlocksAndNegativeOffset() throws IOException {
         int pos = seekableCipher.getBlockSize() * 10 - 1;
         testSeek(pos);
     }
 
-    public final void testSeek(int seekPos) throws IOException {
+    public void testSeek(int seekPos) throws IOException {
         cis.seek(seekPos);
 
         assertThat(cis.getPos(), is((long) seekPos));
@@ -138,7 +138,7 @@ public final class DecryptingSeekableInputTest {
     }
 
     @Test
-    public final void testBulkRead() throws IOException {
+    public void testBulkRead() throws IOException {
         long startPos = cis.getPos();
         byte[] buffer = new byte[NUM_BYTES];
         int offset = 0;
