@@ -19,22 +19,30 @@ package com.palantir.crypto.io;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
+import com.palantir.crypto.cipher.AesCbcCipher;
+import com.palantir.crypto.cipher.AesCtrCipher;
 import com.palantir.crypto.cipher.SeekableCipher;
+import com.palantir.crypto.cipher.SeekableCipherFactory;
 import com.palantir.seekio.SeekableInput;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Random;
 import javax.crypto.Cipher;
 import javax.crypto.CipherOutputStream;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-public abstract class AbstractDecryptingSeekableInputTest {
+@RunWith(Parameterized.class)
+public final class DecryptingSeekableInputTest {
 
     private static final int NUM_BYTES = 1024 * 1024;
     private static final Random random = new Random(0);
@@ -43,7 +51,23 @@ public abstract class AbstractDecryptingSeekableInputTest {
     private SeekableCipher seekableCipher;
     private DecryptingSeekableInput cis;
 
-    abstract SeekableCipher getSeekableCipher();
+    @Parameterized.Parameters
+    public static Collection<String> ciphers() {
+        return ImmutableList.of(AesCtrCipher.ALGORITHM, AesCbcCipher.ALGORITHM);
+    }
+
+    public DecryptingSeekableInputTest(String cipher) {
+        try {
+            seekableCipher = SeekableCipherFactory.getCipher(cipher);
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            CipherOutputStream cos = new CipherOutputStream(os, seekableCipher.initCipher(Cipher.ENCRYPT_MODE));
+            cos.write(data);
+            cos.close();
+            cis = new DecryptingSeekableInput(new ByteArraySeekableInput(os.toByteArray()), seekableCipher);
+        } catch (IOException e) {
+            throw Throwables.propagate(e);
+        }
+    }
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -52,16 +76,6 @@ public abstract class AbstractDecryptingSeekableInputTest {
     public static void beforeClass() throws IOException {
         data = new byte[NUM_BYTES];
         random.nextBytes(data);
-    }
-
-    @Before
-    public final void before() throws IOException {
-        seekableCipher = getSeekableCipher();
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-        CipherOutputStream cos = new CipherOutputStream(os, seekableCipher.initCipher(Cipher.ENCRYPT_MODE));
-        cos.write(data);
-        cos.close();
-        cis = new DecryptingSeekableInput(new ByteArraySeekableInput(os.toByteArray()), seekableCipher);
     }
 
     @Test
