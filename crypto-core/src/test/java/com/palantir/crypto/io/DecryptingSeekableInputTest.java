@@ -51,6 +51,15 @@ public final class DecryptingSeekableInputTest {
     private SeekableCipher seekableCipher;
     private DecryptingSeekableInput cis;
 
+    @Rule
+    public TemporaryFolder tempFolder = new TemporaryFolder();
+
+    @BeforeClass
+    public static void beforeClass() throws IOException {
+        data = new byte[NUM_BYTES];
+        random.nextBytes(data);
+    }
+
     @Parameterized.Parameters
     public static Collection<String> ciphers() {
         return ImmutableList.of(AesCtrCipher.ALGORITHM, AesCbcCipher.ALGORITHM);
@@ -67,15 +76,6 @@ public final class DecryptingSeekableInputTest {
         } catch (IOException e) {
             throw Throwables.propagate(e);
         }
-    }
-
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
-
-    @BeforeClass
-    public static void beforeClass() throws IOException {
-        data = new byte[NUM_BYTES];
-        random.nextBytes(data);
     }
 
     @Test
