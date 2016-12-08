@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-package com.palantir.crypto.cipher;
+package com.palantir.crypto.io;
 
 import com.palantir.crypto.KeyMaterial;
+import com.palantir.crypto.cipher.AesCbcCipher;
+import com.palantir.crypto.cipher.SeekableCipher;
+import com.palantir.crypto.io.AbstractDecryptingSeekableInputTest;
 
-public final class AesCbcCipherInputStreamTest extends AbstractDecryptingInputStreamTest {
+public final class AesCbcCipherSeekableInputTest extends AbstractDecryptingSeekableInputTest {
 
     @Override
     SeekableCipher getSeekableCipher() {

@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.palantir.crypto.cipher;
+package com.palantir.crypto.io;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 import com.google.common.io.ByteStreams;
-import com.palantir.crypto.io.DecryptingSeekableInput;
-import com.palantir.crypto.io.DefaultSeekableInputStream;
+import com.palantir.crypto.cipher.ByteArraySeekableInput;
+import com.palantir.crypto.cipher.SeekableCipher;
 import com.palantir.seekio.SeekableInput;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -35,7 +35,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public abstract class AbstractDecryptingInputStreamTest {
+public abstract class AbstractDecryptingSeekableInputTest {
 
     private static final int NUM_BYTES = 1024 * 1024;
     private static final Random random = new Random(0);
