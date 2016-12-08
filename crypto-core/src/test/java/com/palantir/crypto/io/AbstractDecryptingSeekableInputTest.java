@@ -20,7 +20,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 import com.google.common.io.ByteStreams;
-import com.palantir.crypto.cipher.ByteArraySeekableInput;
 import com.palantir.crypto.cipher.SeekableCipher;
 import com.palantir.seekio.SeekableInput;
 import java.io.ByteArrayOutputStream;

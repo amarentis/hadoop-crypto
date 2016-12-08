@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.crypto.cipher;
+package com.palantir.crypto.io;
 
 import com.palantir.seekio.SeekableInput;
 import java.io.ByteArrayInputStream;
