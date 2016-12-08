@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-package com.palantir.hadoop.cipher;
+package com.palantir.crypto.cipher;
 
 import com.palantir.crypto.KeyMaterial;
-import com.palantir.crypto.cipher.AesCtrCipher;
-import com.palantir.crypto.cipher.SeekableCipher;
 
-public final class AesCtrCipherInputStreamTest extends AbstractFsCipherInputStreamTest {
+public final class AesCtrCipherInputStreamTest extends AbstractDecryptingInputStreamTest {
 
     @Override
     SeekableCipher getSeekableCipher() {

@@ -14,41 +14,35 @@
  * limitations under the License.
  */
 
-package com.palantir.hadoop.cipher;
+package com.palantir.crypto.cipher;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-import com.palantir.crypto.cipher.SeekableCipher;
+import com.google.common.io.ByteStreams;
+import com.palantir.crypto.io.DecryptingSeekableInput;
+import com.palantir.crypto.io.DefaultSeekableInputStream;
+import com.palantir.seekio.SeekableInput;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.URI;
 import java.util.Arrays;
 import java.util.Random;
-import org.apache.commons.io.IOUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.RawLocalFileSystem;
+import javax.crypto.Cipher;
+import javax.crypto.CipherOutputStream;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public abstract class AbstractFsCipherInputStreamTest {
+public abstract class AbstractDecryptingInputStreamTest {
 
     private static final int NUM_BYTES = 1024 * 1024;
     private static final Random random = new Random(0);
-    private static final FileSystem fs = new RawLocalFileSystem();
     private static byte[] data;
 
-    private boolean dataWritten = false;
-    private Path path;
     private SeekableCipher seekableCipher;
-    private FsCipherInputStream cis;
+    private DecryptingSeekableInput cis;
 
     abstract SeekableCipher getSeekableCipher();
 
@@ -57,27 +51,18 @@ public abstract class AbstractFsCipherInputStreamTest {
 
     @BeforeClass
     public static void beforeClass() throws IOException {
-        fs.initialize(URI.create("file:///"), new Configuration());
-
         data = new byte[NUM_BYTES];
         random.nextBytes(data);
     }
 
     @Before
     public final void before() throws IOException {
-        // Only write data once. Cannot be in beforeClass since getSeekableCipher cannot be made static
-        if (!dataWritten) {
-            seekableCipher = getSeekableCipher();
-            path = new Path(tempFolder.newFile().getAbsolutePath());
-            FSDataOutputStream fos = fs.create(path);
-            OutputStream os = new FsCipherOutputStream(fos, seekableCipher);
-            os.write(data);
-            os.close();
-            dataWritten = true;
-        }
-
-        FSDataInputStream is = fs.open(path);
-        cis = new FsCipherInputStream(is, seekableCipher);
+        seekableCipher = getSeekableCipher();
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        CipherOutputStream cos = new CipherOutputStream(os, seekableCipher.initCipher(Cipher.ENCRYPT_MODE));
+        cos.write(data);
+        cos.close();
+        cis = new DecryptingSeekableInput(new ByteArraySeekableInput(os.toByteArray()), seekableCipher);
     }
 
     @Test
@@ -85,7 +70,7 @@ public abstract class AbstractFsCipherInputStreamTest {
         assertThat(cis.getPos(), is(0L));
 
         byte[] decrypted = new byte[NUM_BYTES];
-        IOUtils.readFully(cis, decrypted);
+        readFully(cis, decrypted);
 
         assertThat(cis.getPos(), is((long) NUM_BYTES));
         assertThat(decrypted, is(data));
@@ -116,7 +101,7 @@ public abstract class AbstractFsCipherInputStreamTest {
     @Test
     public final void testSeek_onePastEndOfData() throws IOException {
         cis.seek(NUM_BYTES);
-        assertThat(cis.read(), is(-1));
+        assertThat(cis.read(new byte[1], 0, 1), is(-1));
     }
 
     @Test
@@ -131,32 +116,12 @@ public abstract class AbstractFsCipherInputStreamTest {
         assertThat(cis.getPos(), is((long) seekPos));
 
         byte[] decrypted = new byte[NUM_BYTES - seekPos];
-        IOUtils.readFully(cis, decrypted);
+        readFully(cis, decrypted);
 
         byte[] expected = Arrays.copyOfRange(data, seekPos, NUM_BYTES);
 
         assertThat(decrypted.length, is(expected.length));
         assertThat(decrypted, is(expected));
-    }
-
-    @Test
-    public final void testSeekToNewSource_fail() throws IOException {
-        long targetPos = NUM_BYTES / seekableCipher.getBlockSize() + 1;
-        long startPos = cis.getPos();
-
-        boolean seeked = cis.seekToNewSource(targetPos);
-
-        assertThat(seeked, is(false));
-        assertThat(cis.getPos(), is(startPos));
-    }
-
-    @Test
-    public final void testRead() throws IOException {
-        long startPos = cis.getPos();
-        byte val = (byte) cis.read();
-
-        assertThat(cis.getPos(), is(startPos + 1));
-        assertThat(val, is(data[0]));
     }
 
     @Test
@@ -173,6 +138,10 @@ public abstract class AbstractFsCipherInputStreamTest {
         assertThat(buffer, is(data));
         assertThat(offset, is(NUM_BYTES));
         cis.close();
+    }
+
+    private static void readFully(SeekableInput input, byte[] decrypted) throws IOException {
+        ByteStreams.readFully(new DefaultSeekableInputStream(input), decrypted);
     }
 
 }
